@@ -5,6 +5,7 @@ import com.tiiaan.tidp.dto.UserDTO;
 import com.tiiaan.tidp.utils.RedisConstants;
 import com.tiiaan.tidp.utils.UserHolder;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit;
  * description
  */
 
+@Component
 public class RefreshTokenInterceptor implements HandlerInterceptor {
 
     private StringRedisTemplate stringRedisTemplate;
@@ -30,8 +32,9 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         //1. 获取token
         String token = request.getHeader("authorization");
+        String tokenKey = RedisConstants.LOGIN_USER_KEY + token;
         //2. 拿着token从Redis中取出用户
-        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(token);
+        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(tokenKey);
         //3. 如果查到了用户就保存到ThreadLocal中
         if (!userMap.isEmpty()) {
             UserDTO user = BeanUtil.fillBeanWithMap(userMap, new UserDTO(), false);
