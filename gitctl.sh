@@ -10,4 +10,4 @@ GIT_COMMITTER_DATE="October ${day} ${time} 2022 +0800" git commit --amend --date
 git push -u origin master
 id=$(git rev-parse HEAD)
 memo="- [[${${id}: 0: 7}]](https://github.com/tiiaan/tidp/commit/${id})"
-echo "- ${memo} ${comment}" >> /Users/tiiaan/Projects/tidp/README.md
+echo "${memo} ${comment}" >> /Users/tiiaan/Projects/tidp/README.md
