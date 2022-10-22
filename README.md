@@ -31,4 +31,4 @@ sudo chmod +x *.sh
 ### 更新日志
 - [[6a737dd]](https://github.com/tiiaan/tidp/commit/6a737dd5084eb5d013150a505cb761d11f1b2e4e) :tada: redis 共享 session 实现短信登录
 - [[7910d1d]](https://github.com/tiiaan/tidp/commit/7910d1dac857c23ad373e67312b7fa04265e06bb) :tada: redis 集群脚本
-- [[874feb3]](https://github.com/tiiaan/tidp/commit/874feb300fd2ea16334e45f9b1f80c427901a8b0) :tada: README
+- [[f4f55e2]](https://github.com/tiiaan/tidp/commit/f4f55e2bc9d431c93512ddcba10d238f2f9846fb) :tada: 拆分登陆校验拦截器和 token 有效期刷新拦截器
