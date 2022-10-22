@@ -35,3 +35,4 @@ sudo chmod +x *.sh
 - [[f4f55e2]](https://github.com/tiiaan/tidp/commit/f4f55e2bc9d431c93512ddcba10d238f2f9846fb) :tada: 拆分登陆校验拦截器和 token 有效期刷新拦截器
 - [[1350ca4]](https://github.com/tiiaan/tidp/commit/1350ca4c000a50c800fb5e8892a1393a170ac288) :tada: 商铺查询缓存
 - [[1765299]](https://github.com/tiiaan/tidp/commit/1765299510f41e91de95298969b7dfc2d997bfc8) :tada: 商铺查询缓存双写一致性
+- [[e05f21e]](https://github.com/tiiaan/tidp/commit/e05f21e434046e52f8daae2b2a2d9f8b5639aa81) :tada: 缓存空值解决缓存雪崩问题
