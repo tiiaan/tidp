@@ -6,9 +6,12 @@ import cn.hutool.json.JSONUtil;
 import com.tiiaan.tidp.entity.Shop;
 import com.tiiaan.tidp.utils.RedisConstants;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import javax.swing.text.html.ObjectView;
 import java.time.LocalDateTime;
 import java.util.concurrent.*;
@@ -25,7 +28,9 @@ import java.util.function.Function;
 @Component
 public class CacheClient {
 
-    private final StringRedisTemplate stringRedisTemplate;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
 
     private static final int CORE_POOL_SIZE = 10;
     private static final int MAXIMUM_POOL_SIZE_SIZE = 15;
@@ -40,14 +45,9 @@ public class CacheClient {
             Executors.defaultThreadFactory(),
             new ThreadPoolExecutor.AbortPolicy());
 
-    private static final String LOCK_KEY = "lock:";
-    private static final Long LOCK_TTL = 10L;
+    //private static final String LOCK_KEY = "lock:";
+    //private static final Long LOCK_TTL = 10L;
     private static final Long NULL_TTL = 2L;
-
-
-    public CacheClient(StringRedisTemplate stringRedisTemplate) {
-        this.stringRedisTemplate = stringRedisTemplate;
-    }
 
 
 
@@ -138,7 +138,8 @@ public class CacheClient {
             return null;
         }
         T value;
-        boolean isLock = this.tryLock(key);
+        SimpleRedisLock lock = new SimpleRedisLock(key, stringRedisTemplate);
+        boolean isLock = lock.tryLock(10L, TimeUnit.SECONDS);
         try {
             if (!isLock) {
                 try { TimeUnit.MILLISECONDS.sleep(50); } catch (InterruptedException e) { e.printStackTrace(); }
@@ -151,11 +152,39 @@ public class CacheClient {
             }
             this.set(key, value, time, timeUnit);
         } finally {
-            this.tryUnlock(key);
+            lock.unlock();
         }
         return value;
     }
 
+    //public <T, R> T queryWithMutex(String prefix, R queryKey, Class<T> clazz, Function<R, T> dbFallback, Long time, TimeUnit timeUnit) {
+    //    String key = prefix + queryKey;
+    //    String json = stringRedisTemplate.opsForValue().get(key);
+    //    if (json != null && json.length() != 0) {
+    //        return JSONUtil.toBean(json, clazz);
+    //    }
+    //    if (json != null) {
+    //        return null;
+    //    }
+    //    T value;
+    //    String lockKey = LOCK_KEY + key;
+    //    boolean isLock = this.tryLock(lockKey);
+    //    try {
+    //        if (!isLock) {
+    //            try { TimeUnit.MILLISECONDS.sleep(50); } catch (InterruptedException e) { e.printStackTrace(); }
+    //            return this.queryWithMutex(prefix, queryKey, clazz, dbFallback, time, timeUnit);
+    //        }
+    //        value = dbFallback.apply(queryKey);
+    //        if (value == null) {
+    //            stringRedisTemplate.opsForValue().set(key, "", NULL_TTL, TimeUnit.MINUTES);
+    //            return null;
+    //        }
+    //        this.set(key, value, time, timeUnit);
+    //    } finally {
+    //        this.tryUnlock(lockKey);
+    //    }
+    //    return value;
+    //}
 
 
 
@@ -173,16 +202,18 @@ public class CacheClient {
     public <T, R> T queryWithLogicalExpire(String prefix, R queryKey, Class<T> clazz, Function<R, T> dbFallback, Long time, TimeUnit timeUnit) {
         String key = prefix + queryKey;
         String json = stringRedisTemplate.opsForValue().get(key);
-        if (json == null || json.length() != 0) {
+        if (json == null || json.length() == 0) {
             return null;
         }
         LogicalExpireData logicalExpireData = JSONUtil.toBean(json, LogicalExpireData.class);
-        T value = clazz.cast(logicalExpireData.getData());
+        //T value = clazz.cast(logicalExpireData.getData());
+        T value = JSONUtil.toBean((JSONObject) logicalExpireData.getData(), clazz);
         LocalDateTime expireTime = logicalExpireData.getExpireTime();
         if (expireTime.isAfter(LocalDateTime.now())) {
             return value;
         }
-        boolean isLock = this.tryLock(key);
+        SimpleRedisLock lock = new SimpleRedisLock(key, stringRedisTemplate);
+        boolean isLock = lock.tryLock(10L, TimeUnit.SECONDS);
         if (isLock) {
             CACHE_REBUILD_POOL.submit(() -> {
                 try {
@@ -191,7 +222,7 @@ public class CacheClient {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 } finally {
-                    this.tryUnlock(key);
+                    lock.unlock();
                 }
             });
         }
@@ -199,38 +230,45 @@ public class CacheClient {
     }
 
 
+    //public <T, R> T queryWithLogicalExpire(String prefix, R queryKey, Class<T> clazz, Function<R, T> dbFallback, Long time, TimeUnit timeUnit) {
+    //    String key = prefix + queryKey;
+    //    String json = stringRedisTemplate.opsForValue().get(key);
+    //    if (json == null || json.length() != 0) {
+    //        return null;
+    //    }
+    //    LogicalExpireData logicalExpireData = JSONUtil.toBean(json, LogicalExpireData.class);
+    //    T value = clazz.cast(logicalExpireData.getData());
+    //    LocalDateTime expireTime = logicalExpireData.getExpireTime();
+    //    if (expireTime.isAfter(LocalDateTime.now())) {
+    //        return value;
+    //    }
+    //    String lockKey = LOCK_KEY + key;
+    //    boolean isLock = this.tryLock(lockKey);
+    //    if (isLock) {
+    //        CACHE_REBUILD_POOL.submit(() -> {
+    //            try {
+    //                T newValue = dbFallback.apply(queryKey);
+    //                this.setWithLogicalExpire(key, newValue, time, timeUnit);
+    //            } catch (Exception e) {
+    //                throw new RuntimeException(e);
+    //            } finally {
+    //                this.tryUnlock(key);
+    //            }
+    //        });
+    //    }
+    //    return value;
+    //}
 
-    private boolean tryLock(String lock) {
-        Boolean isLock = stringRedisTemplate.opsForValue().setIfAbsent(lock + LOCK_KEY, "1", LOCK_TTL, TimeUnit.SECONDS);
-        return BooleanUtil.isTrue(isLock);
-    }
 
 
-    private void tryUnlock(String lock) {
-        stringRedisTemplate.delete(lock + LOCK_KEY);
-    }
-
-
-    private class LogicalExpireData {
-        private LocalDateTime expireTime;
-        private Object data;
-
-        public LocalDateTime getExpireTime() {
-            return expireTime;
-        }
-
-        public void setExpireTime(LocalDateTime expireTime) {
-            this.expireTime = expireTime;
-        }
-
-        public Object getData() {
-            return data;
-        }
-
-        public void setData(Object data) {
-            this.data = data;
-        }
-    }
-
+    //private boolean tryLock(String lockKey) {
+    //    Boolean isLock = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", LOCK_TTL, TimeUnit.SECONDS);
+    //    return BooleanUtil.isTrue(isLock);
+    //}
+    //
+    //
+    //private void tryUnlock(String lockKey) {
+    //    stringRedisTemplate.delete(lockKey);
+    //}
 
 }

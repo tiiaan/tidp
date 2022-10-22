@@ -38,6 +38,7 @@ public class VoucherController {
         return Result.ok(voucher.getId());
     }
 
+
     /**
      * 查询店铺的优惠券列表
      * @param shopId 店铺id
