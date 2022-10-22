@@ -7,7 +7,7 @@ time=$(date "+%H:%M:%S")
 git add .
 git commit -m "${comment}"
 GIT_COMMITTER_DATE="October ${day} ${time} 2022 +0800" git commit --amend --date "October ${day} ${time} 2022 +0800"
-git push -u origin master
+git push -u origin master -f
 id=$(git rev-parse HEAD)
 memo="- [[${${id}: 0: 7}]](https://github.com/tiiaan/tidp/commit/${id})"
 echo "${memo} ${comment}" >> /Users/tiiaan/Projects/tidp/README.md
