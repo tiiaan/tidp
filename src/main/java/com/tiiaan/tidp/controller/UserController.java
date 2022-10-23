@@ -1,6 +1,7 @@
 package com.tiiaan.tidp.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.tiiaan.tidp.dto.LoginFormDTO;
 import com.tiiaan.tidp.dto.Result;
 import com.tiiaan.tidp.dto.UserDTO;
@@ -34,6 +35,7 @@ public class UserController {
     public Result sendCode(@RequestParam("phone") String phone, HttpSession session) {
         return userService.sendCode(phone, session);
     }
+
 
     /**
      * 登录功能
@@ -78,4 +80,18 @@ public class UserController {
         // 返回
         return Result.ok(info);
     }
+
+
+    @GetMapping("/{id}")
+    public Result queryUserById(@PathVariable("id") Long userId){
+        // 查询详情
+        User user = userService.getById(userId);
+        if (user == null) {
+            return Result.ok();
+        }
+        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
+        // 返回
+        return Result.ok(userDTO);
+    }
+
 }
