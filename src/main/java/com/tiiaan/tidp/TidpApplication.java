@@ -13,6 +13,5 @@ public class TidpApplication {
         SpringApplication.run(TidpApplication.class, args);
     }
 
-    //TODO 02/23 消息队列、达人探店、点赞、排行榜、关注、附近商铺、用户签到、UV统计
-
+    //TODO 02/23 附近商铺、用户签到、UV统计
 }

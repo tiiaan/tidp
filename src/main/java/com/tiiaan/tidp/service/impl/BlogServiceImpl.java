@@ -5,19 +5,24 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tiiaan.tidp.dto.Result;
+import com.tiiaan.tidp.dto.ScrollResult;
 import com.tiiaan.tidp.dto.UserDTO;
 import com.tiiaan.tidp.entity.Blog;
+import com.tiiaan.tidp.entity.Follow;
 import com.tiiaan.tidp.entity.User;
 import com.tiiaan.tidp.mapper.BlogMapper;
 import com.tiiaan.tidp.service.IBlogService;
+import com.tiiaan.tidp.service.IFollowService;
 import com.tiiaan.tidp.service.IUserService;
 import com.tiiaan.tidp.utils.RedisConstants;
 import com.tiiaan.tidp.utils.SystemConstants;
 import com.tiiaan.tidp.utils.UserHolder;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +38,11 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 
     @Resource
     private IUserService userService;
+
+    @Resource
+    private IFollowService followService;
+
+
 
 
     @Override
@@ -135,6 +145,61 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         // 查询用户
         records.forEach(this::fillBlogInfos);
         return Result.ok(records);
+    }
+
+
+    @Override
+    public Result saveBlog(Blog blog) {
+        // 获取登录用户
+        UserDTO user = UserHolder.getUser();
+        blog.setUserId(user.getId());
+        // 保存探店博文
+        boolean isSaved = save(blog);
+        if (!isSaved) {
+            return Result.fail("笔记发布失败");
+        }
+        //查询作者的粉丝
+        List<Follow> followList = followService.query().eq("follow_user_id", user.getId()).list();
+        //推模式feed推送给粉丝
+        for (Follow follow : followList) {
+            Long userId = follow.getUserId();
+            String key = RedisConstants.FEED_KEY + userId;
+            stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), System.currentTimeMillis());
+        }
+        // 返回id
+        return Result.ok(blog.getId());
+    }
+
+
+
+    @Override
+    public Result queryBlogOfFollow(Long max, Integer offset) {
+        Long userId = UserHolder.getUser().getId();
+        String key = RedisConstants.FEED_KEY + userId;
+        Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet().reverseRangeByScoreWithScores(key, 0, max, offset, 2);
+        if (typedTuples == null || typedTuples.isEmpty()) {
+            return Result.ok();
+        }
+        ArrayList<Long> ids = new ArrayList<>(typedTuples.size());
+        long minTime = 0;
+        int os = 1;
+        for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
+            ids.add(Long.valueOf(tuple.getValue()));
+            long time = tuple.getScore().longValue();
+            if (time == minTime) {
+                os++;
+            } else {
+                minTime = time;
+            }
+        }
+        String idStr = StrUtil.join(",", ids);
+        List<Blog> blogs = query().in("id", ids).last("ORDER BY FIELD(id," + idStr + ")").list();
+        blogs.forEach(this::fillBlogInfos);
+        ScrollResult result = new ScrollResult();
+        result.setList(blogs);
+        result.setOffset(os);
+        result.setMinTime(minTime);
+        return Result.ok(result);
     }
 
 }

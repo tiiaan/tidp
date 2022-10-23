@@ -41,3 +41,4 @@ sudo chmod +x *.sh
 - [[161f9f0]](https://github.com/tiiaan/tidp/commit/161f9f092f752001463803f559fb5d0869b35810) :bug: 分布式锁优化, 修复工具类bug
 - [[730f9eb]](https://github.com/tiiaan/tidp/commit/730f9eb6fb9e353f443de9d839ba948f88662aa2) :tada: redis set 实现点赞和取消点赞
 - [[fbee692]](https://github.com/tiiaan/tidp/commit/fbee692744d22b5877b1f0cdce77e1e5ce9544a8) :tada: redis zset 实现前5名点赞用户排序
+- [[f74f358]](https://github.com/tiiaan/tidp/commit/f74f35864cc0cc83f5162597c985aa6868041329) :tada: redis set 关注取关和共同关注
