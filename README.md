@@ -39,3 +39,4 @@ sudo chmod +x *.sh
 - [[64465ab]](https://github.com/tiiaan/tidp/commit/64465abb0d873edf428fa193d648b135ddc633a9) :tada: 互斥锁解决缓存击穿问题
 - [[e56b9bf]](https://github.com/tiiaan/tidp/commit/e56b9bf4c6c5bd63b3d3707730f5d260bac8c532) :tada: Redis 缓存工具类, 逻辑过期解决缓存击穿问题
 - [[161f9f0]](https://github.com/tiiaan/tidp/commit/161f9f092f752001463803f559fb5d0869b35810) :bug: 分布式锁优化, 修复工具类bug
+- [[730f9eb]](https://github.com/tiiaan/tidp/commit/730f9eb6fb9e353f443de9d839ba948f88662aa2) :tada: redis set 实现点赞和取消点赞
