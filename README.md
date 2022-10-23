@@ -3,8 +3,8 @@
 ### 特性
 - [x] 实现共享 session
 - [x] 查询缓存
-- [ ] 秒杀
-- [ ] 分布式锁
+- [x] 秒杀
+- [x] 分布式锁
 - [ ] List 点赞列表
 - [ ] SortedSet 点赞排行榜
 - [ ] Set 好友关注
@@ -38,3 +38,4 @@ sudo chmod +x *.sh
 - [[e05f21e]](https://github.com/tiiaan/tidp/commit/e05f21e434046e52f8daae2b2a2d9f8b5639aa81) :tada: 缓存空值解决缓存雪崩问题
 - [[64465ab]](https://github.com/tiiaan/tidp/commit/64465abb0d873edf428fa193d648b135ddc633a9) :tada: 互斥锁解决缓存击穿问题
 - [[e56b9bf]](https://github.com/tiiaan/tidp/commit/e56b9bf4c6c5bd63b3d3707730f5d260bac8c532) :tada: Redis 缓存工具类, 逻辑过期解决缓存击穿问题
+- [[161f9f0]](https://github.com/tiiaan/tidp/commit/161f9f092f752001463803f559fb5d0869b35810) :bug: 分布式锁优化, 修复工具类bug
